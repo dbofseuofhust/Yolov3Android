@@ -1,4 +1,4 @@
-package com.jacky.finalexam;
+package com.jacky.finalexam.fragment;
 
 import android.Manifest;
 import android.app.Activity;
@@ -8,12 +8,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
@@ -49,14 +45,15 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 
-import java.io.IOException;
+import com.jacky.finalexam.R;
+import com.jacky.finalexam.view.AutoFitSurfaceView;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -196,7 +193,7 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
 
             byte[] yuv = yuvbuffer.array();
 
-            mSurfaceView.Draw(yuv, width, height, 270);
+            mSurfaceView.draw(yuv, width, height, 270);
             im.close();
         }
 

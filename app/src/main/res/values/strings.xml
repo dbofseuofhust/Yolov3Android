@@ -1,10 +1,11 @@
 <resources>
     <string name="app_name">finalExam</string>
-    <string name="predict_result">predict result is null</string>
+    <string name="predict_result">不包含目标物体</string>
     <string name="open_gallery">打开相册</string>
     <string name="result">识别结果</string>
     <string name="video">实时捕捉</string>
     <string name="description_info">Info</string>
     <string name="request_permission">This sample needs camera permission. please restart it</string>
     <string name="camera_error">This device doesn\'t support Camera2 API.</string>
+    <string name="label">毕业设计</string>
 </resources>

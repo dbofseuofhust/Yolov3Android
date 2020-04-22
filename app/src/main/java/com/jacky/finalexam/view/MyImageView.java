@@ -1,4 +1,4 @@
-package com.jacky.finalexam;
+package com.jacky.finalexam.view;
 
 import android.content.Context;
 import android.graphics.Canvas;

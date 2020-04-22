@@ -4,13 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".DetectActivity">
+    android:background="@drawable/background"
+    tools:context=".activity.DetectActivity">
 
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#000"
-        tools:context="com.jacky.finalexam.DetectActivity" />
+        tools:context="com.jacky.finalexam.activity.DetectActivity" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

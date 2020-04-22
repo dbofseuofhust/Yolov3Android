@@ -1,4 +1,4 @@
-package com.jacky.finalexam;
+package com.jacky.finalexam.jni;
 import android.graphics.Bitmap;
 
 public class Yolo {

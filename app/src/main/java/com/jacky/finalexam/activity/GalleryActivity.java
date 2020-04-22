@@ -1,41 +1,53 @@
-package com.jacky.finalexam;
+package com.jacky.finalexam.activity;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.annotation.Nullable;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.net.Uri;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.jacky.finalexam.R;
+import com.jacky.finalexam.utils.Util;
+import com.jacky.finalexam.jni.Yolo;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class VideoActivity extends AppCompatActivity {
+public class GalleryActivity extends BaseActivity {
 
-    private static final String TAG = "VideoActivity";
-
+    private static final String TAG = GalleryActivity.class.getName();
+    private static final int SELECT_PHOTO = 999;
+    private ImageView show;
+    private TextView out;
     private boolean isLoad = false;
     private int[] dims = {1, 3, 416, 416};
     private ArrayList<String> resultLabel = new ArrayList<>();
-    private Yolo Yolo = new Yolo();
+    private com.jacky.finalexam.jni.Yolo Yolo = new Yolo();
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_video);
+        setContentView(R.layout.activity_gallery);
+//        CameraView cameraView = findViewById(R.id.camera);
         try {
             initYolo();
         } catch (IOException e) {
             Log.e("MainActivity", "init yolo error");
         }
-        CameraView cameraView = findViewById(R.id.camera);
-        MyImageView imageView = findViewById(R.id.my_view);
-        cameraView.setTag(imageView);
+        initView();
         Util.loadLabels(resultLabel, this);
     }
 
@@ -48,9 +60,49 @@ public class VideoActivity extends AppCompatActivity {
         Log.d(TAG, "load model success?:" + isLoad);
     }
 
-    void predict(Bitmap bmp, ImageView imageView) {
-//        Bitmap bmp = Util.getScaleBitmap(image_path);
-//        Log.d(TAG, "有调用");
+    private void initView() {
+        show = findViewById(R.id.image);
+        out = findViewById(R.id.result);
+        out.setMovementMethod(ScrollingMovementMethod.getInstance());
+        Button use_photo = findViewById(R.id.use_photo);
+        use_photo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!isLoad) {
+                    Toast.makeText(GalleryActivity.this, "never load model", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                Util.getImage(GalleryActivity.this, SELECT_PHOTO);
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        String imagePath;
+        if (resultCode == Activity.RESULT_OK) {
+            switch (requestCode) {
+                case SELECT_PHOTO:
+                    if (data == null) {
+                        Log.w(TAG, "user photo data is null");
+                        return;
+                    }
+                    Uri imageUri = data.getData();
+                    imagePath = Util.getUri(GalleryActivity.this, imageUri);
+                    if (imagePath == null) {
+                        Log.d("test", "path is null");
+                    } else {
+                        Log.d("test", "everything is ok");
+                    }
+                    predict(imagePath);
+                    break;
+            }
+        }
+    }
+
+    private void predict(String image_path) {
+        Bitmap bmp = Util.getScaleBitmap(image_path);
         if (bmp == null) {
             Log.d(TAG, "can not get image");
             return;
@@ -61,10 +113,10 @@ public class VideoActivity extends AppCompatActivity {
 
             long startTime = System.currentTimeMillis();
             float[] result = Yolo.Detect(input_bmp);
-            if (result.length == 0) {
+            if (result == null) {
+                out.setText(getResources().getString(R.string.predict_result));
                 Log.d(TAG, "predict result is null");
                 return;
-//                out.setText(getResources().getString(R.string.predict_result));
             }
             long endTime = System.currentTimeMillis();
             Log.d(TAG, "result:" + Arrays.toString(result));
@@ -78,7 +130,7 @@ public class VideoActivity extends AppCompatActivity {
                         .append(resultLabel.get((int) result[i])).append("\nprobability：")
                         .append(result[i]).append("\ntime：").append(cost).append("ms").append("\n");
             }
-//            out.setText(resultContent.toString());
+            out.setText(resultContent.toString());
             Canvas canvas = new Canvas(rgba);
             Paint paint = new Paint();
             paint.setColor(Color.RED);
@@ -103,31 +155,12 @@ public class VideoActivity extends AppCompatActivity {
                 canvas.drawText(resultLabel.get((int) finalArray[obj][0]),
                         finalArray[obj][2] * rgba.getWidth(), finalArray[obj][3] * rgba.getHeight(), paint);
             }
-//            show.setImageBitmap(rgba);
-            if (null != imageView) {
-                showImage(rgba, (MyImageView) imageView);
-//                rgba.recycle();
-            } else {
-                rgba.recycle();
-            }
-//            rgba.recycle();
-            input_bmp.recycle();
+            show.setImageBitmap(rgba);
+
 
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private void showImage(final Bitmap bmp, final MyImageView imageView) {
-        //将裁切的图片显示出来（测试用，需要为CameraView  setTag（ImageView））
-        MainThread.getInstance().
-                execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        imageView.setVisibility(View.VISIBLE);
-                        imageView.setImageBitmap(bmp);
-                    }
-                });
     }
 
 

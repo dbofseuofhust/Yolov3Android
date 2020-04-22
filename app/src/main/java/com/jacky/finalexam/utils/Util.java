@@ -1,4 +1,4 @@
-package com.jacky.finalexam;
+package com.jacky.finalexam.utils;
 
 import android.app.Activity;
 import android.content.Context;

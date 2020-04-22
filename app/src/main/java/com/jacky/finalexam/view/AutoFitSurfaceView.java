@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-package com.jacky.finalexam;
+package com.jacky.finalexam.view;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.YuvImage;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
@@ -37,7 +34,10 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
 
-import java.io.ByteArrayOutputStream;
+import com.jacky.finalexam.App;
+import com.jacky.finalexam.jni.Yolo;
+import com.jacky.finalexam.utils.Util;
+
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -59,7 +59,7 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
     private boolean isLoad = false;
     private int[] dims = {1, 3, 416, 416};
     private ArrayList<String> resultLabel = new ArrayList<>();
-    private Yolo Yolo = new Yolo();
+    private com.jacky.finalexam.jni.Yolo Yolo = new Yolo();
 
     private float mWidth = 0;
     private float mHeight = 0;
@@ -136,7 +136,7 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
         Log.i(TAG, "surfaceDestroyed ");
     }
 
-    private void DrawRect(Rect rect, int color, String string) {
+    private void drawRect(Rect rect, int color, String string) {
         paint.setColor(color);
         paint.setStyle(Paint.Style.STROKE);
         paint.setTextSize(24f);
@@ -144,7 +144,7 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
 
         mCanvas.drawRect(rect, paint);
         paint.setStyle(Paint.Style.FILL);
-        mCanvas.drawText(string, rect.left + 4, rect.top + 28, paint);
+        mCanvas.drawText(string, rect.left + 4, rect.top + 14, paint);
     }
 
     static private int class_color[] = {
@@ -156,7 +156,7 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
     };
 
 
-    public void DrawDetect(float[] data, int width, int height, int rolatedeg) {
+    public void drawDetect(float[] data, int width, int height, int rolatedeg) {
         int obj = 0;
         int num = data.length / 6;
         int t, x, y, xe, ye;
@@ -182,7 +182,7 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
                 ye = height;
             }
 
-            DrawRect(new Rect(x, y, xe, ye), class_color[t], resultLabel.get((int) finalArray[obj][0]));
+            drawRect(new Rect(x, y, xe, ye), class_color[t], resultLabel.get((int) finalArray[obj][0]));
         }
 
     }
@@ -190,7 +190,7 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
     private float[] result;
     private boolean isRunning;
 
-    public void Draw(byte[] data, int width, int height, int rolatedeg) {
+    public void draw(byte[] data, int width, int height, int rolatedeg) {
         long startTime, endTime;
         Log.d(TAG, "draw " + data.length + " " + width + "X" + height);
         if (data != null) {
@@ -231,13 +231,14 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
                     isRunning = true;
                     new Thread(new Runnable() {
                         public void run() {
-                            result = Yolo.Detect(input_bmp);
+                            if (input_bmp != null)
+                                result = Yolo.Detect(input_bmp);
                             isRunning = false;
                         }
                     }).start();
                 }
                 if (null != result) {
-                    DrawDetect(result, (int) mWidth, (int) mHeight, rolatedeg);
+                    drawDetect(result, (int) mWidth, (int) mHeight, rolatedeg);
                 }
             } catch (Exception e) {
                 Log.d(TAG, "e=" + e);
@@ -261,8 +262,8 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
         in.copyFrom(yuv);
         yuvToRgbIntrinsic.setInput(in);
         yuvToRgbIntrinsic.forEach(out);
-        Bitmap rgbout = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        out.copyTo(rgbout);
-        return rgbout;
+        Bitmap rgba = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        out.copyTo(rgba);
+        return rgba;
     }
 }
