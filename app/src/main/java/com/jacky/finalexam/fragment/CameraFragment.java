@@ -46,7 +46,7 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 
 import com.jacky.finalexam.R;
-import com.jacky.finalexam.view.AutoFitSurfaceView;
+import com.jacky.finalexam.view.CameraView;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -117,7 +117,7 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
 
     private String mCameraId;
 
-    private AutoFitSurfaceView mSurfaceView;
+    private CameraView mSurfaceView;
 
     //private CameraCaptureSession mCaptureSession;
     private CameraCaptureSession mCaptureYUVSession;
@@ -298,7 +298,7 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
-        mSurfaceView = (AutoFitSurfaceView) view.findViewById(R.id.texture);
+        mSurfaceView = (CameraView) view.findViewById(R.id.texture);
 
     }
 

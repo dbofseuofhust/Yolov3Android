@@ -2,6 +2,7 @@ package com.jacky.finalexam.adapter;
 
 import android.annotation.SuppressLint;
 import android.graphics.Color;
+import android.text.TextPaint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,6 +37,10 @@ public class CardAdapter extends  RecyclerView.Adapter<CardAdapter.ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, final int position) {
         Image image = imageList.get(position);
         ((TextView) (holder.itemView.findViewById(R.id.tv))).setText(image.getTitle());
+        ((TextView) (holder.itemView.findViewById(R.id.tv))).setTextColor(Color.WHITE);
+        TextPaint paint = ((TextView) (holder.itemView.findViewById(R.id.tv))).getPaint();
+        paint.setFakeBoldText(true);
+        ((TextView) (holder.itemView.findViewById(R.id.tv))).setTextSize(18);
         Glide.with(App.getContext()).load(image.getImageId()).into(holder.imageView);
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override

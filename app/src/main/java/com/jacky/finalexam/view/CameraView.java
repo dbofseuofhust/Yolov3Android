@@ -44,7 +44,7 @@ import java.util.ArrayList;
 /**
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
  */
-public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
+public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     private static final String TAG = "AutoFitSurfaceView";
 
     private SurfaceHolder mHolder;
@@ -75,15 +75,15 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
         Log.d(TAG, "load model success?:" + isLoad);
     }
 
-    public AutoFitSurfaceView(Context context) {
+    public CameraView(Context context) {
         this(context, null);
     }
 
-    public AutoFitSurfaceView(Context context, AttributeSet attrs) {
+    public CameraView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public AutoFitSurfaceView(Context context, AttributeSet attrs, int defStyle) {
+    public CameraView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         Log.i(TAG, "AutoFitSurfaceView struct");
         initParams(context);

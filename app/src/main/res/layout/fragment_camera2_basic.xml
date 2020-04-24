@@ -18,7 +18,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.jacky.finalexam.view.AutoFitSurfaceView
+    <com.jacky.finalexam.view.CameraView
         android:id="@+id/texture"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
