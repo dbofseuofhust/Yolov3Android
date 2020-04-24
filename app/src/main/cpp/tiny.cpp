@@ -105,6 +105,7 @@ Java_com_jacky_finalexam_jni_Yolo_Detect(JNIEnv *env, jobject thiz, jobject bitm
     if (jOutputData == nullptr) return nullptr;
     env->SetFloatArrayRegion(jOutputData, 0, output_wsize * output_hsize,
                              reinterpret_cast<const jfloat *>(*output));  // copy
+    __android_log_print(ANDROID_LOG_DEBUG, "yolov3", "output array %p", jOutputData);
     return jOutputData;
 
 }

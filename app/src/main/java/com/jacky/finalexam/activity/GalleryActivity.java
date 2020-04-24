@@ -124,11 +124,11 @@ public class GalleryActivity extends BaseActivity {
             Log.d(TAG, "result length: " + result.length);
 
             StringBuilder resultContent = new StringBuilder();
-            resultContent.append("result：").append(Arrays.toString(result));
+            resultContent.append("检测结果：").append(Arrays.toString(result));
             for (int i = 0; i < result.length; i += 6) {
-                resultContent.append("\nname：")
-                        .append(resultLabel.get((int) result[i])).append("\nprobability：")
-                        .append(result[i]).append("\ntime：").append(cost).append("ms").append("\n");
+                resultContent.append("\n类别：")
+                        .append(resultLabel.get((int) result[i])).append("\n概率：")
+                        .append(result[i + 1]).append("\n耗时：").append(cost).append("ms").append("\n");
             }
             out.setText(resultContent.toString());
             Canvas canvas = new Canvas(rgba);
