@@ -56,6 +56,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class CameraFragment extends Fragment implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
@@ -161,40 +162,49 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
     private Handler mBackgroundHandler;
     private ImageReader mImageReader;
 
-
-    private double[] mDetect_result;
-    private boolean mDetect_isbusy = false;
-
+    long startTime, endTime;
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
      * still image is ready to be saved.
      */
+
+    private ReentrantLock lock = new ReentrantLock();
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
             = new ImageReader.OnImageAvailableListener() {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-
             Image im = reader.acquireNextImage(); //
             int chcnt = im.getPlanes().length;
             int width = im.getWidth();
             int height = im.getHeight();
 
-            Log.d(TAG, "onImageAvailable "+ width + "X" + height + "X" + chcnt);
+            lock.lock();
+            {
+                Log.d(TAG, "onImageAvailable " + width + "X" + height + "X" + chcnt);
 
-            ByteBuffer bufferY = im.getPlanes()[0].getBuffer();
-            ByteBuffer bufferU = im.getPlanes()[1].getBuffer();
-            ByteBuffer bufferV = im.getPlanes()[2].getBuffer();
+                ByteBuffer bufferY = im.getPlanes()[0].getBuffer();
+                ByteBuffer bufferU = im.getPlanes()[1].getBuffer();
+                ByteBuffer bufferV = im.getPlanes()[2].getBuffer();
 
-            ByteBuffer yuvbuffer = ByteBuffer.allocateDirect(bufferY.remaining() + bufferU.remaining() + bufferV.remaining());
-            yuvbuffer.put(bufferY);
-            yuvbuffer.put(bufferV);
-            yuvbuffer.put(bufferU);
+                ByteBuffer yuvbuffer = ByteBuffer.allocateDirect(bufferY.remaining() + bufferU.remaining() + bufferV.remaining());
+                yuvbuffer.put(bufferY);
+                yuvbuffer.put(bufferV);
+                yuvbuffer.put(bufferU);
+//            endTime = System.currentTimeMillis();
 
-            byte[] yuv = yuvbuffer.array();
+                byte[] yuv = yuvbuffer.array();
+//            Log.d(TAG, "--------中途----------- " + (endTime - startTime));
 
-            mSurfaceView.draw(yuv, width, height, 270);
+                Log.d(TAG, "---------------start-----------");
+                startTime = System.currentTimeMillis();
+                mSurfaceView.draw(yuv, width, height, 270);
+            }
+            lock.unlock();
             im.close();
+            endTime = System.currentTimeMillis();
+            Log.d(TAG, "----------------end-------------");
+            Log.d(TAG, "cost time: " + (endTime - startTime));
         }
 
     };

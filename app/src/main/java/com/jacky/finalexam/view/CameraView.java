@@ -45,7 +45,7 @@ import java.util.ArrayList;
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
  */
 public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
-    private static final String TAG = "AutoFitSurfaceView";
+    private static final String TAG = "CameraView";
 
     private SurfaceHolder mHolder;
     private Canvas mCanvas;
@@ -194,24 +194,25 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         long startTime, endTime;
         Log.d(TAG, "draw " + data.length + " " + width + "X" + height);
         if (data != null) {
-            Log.d(TAG, "-------------start----------------");
-            startTime = System.currentTimeMillis();
+
 //            final YuvImage image = new YuvImage(data, ImageFormat.NV21, width, height, null);
 //            ByteArrayOutputStream stream = new ByteArrayOutputStream();
 //            image.compressToJpeg(new Rect(0, 0, width, height), 100, stream);
 
             mBitmap = yuvToBitmap(data, width, height);
+            final Bitmap input_bmp = Bitmap.createScaledBitmap(mBitmap, dims[2], dims[3], false);
+
+
 //            mBitmap = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
 //            Bitmap rgbout = mBitmap.copy(Bitmap.Config.ARGB_8888, true);
-            endTime = System.currentTimeMillis();
-            Log.d(TAG, "相机返回帧数据处理为bitmap消耗的时间为： " + (endTime - startTime) + " ms");
-            Log.d(TAG, "----------------end------------------");
+
             if (mBitmap == null) {
                 Log.d(TAG, "data data is to bitmap error");
                 return;
             }
 
             try {
+                Log.d(TAG, "-------------start----------------");
                 mCanvas = mHolder.lockCanvas();
                 mWidth = mCanvas.getWidth();
                 mHeight = mCanvas.getHeight();
@@ -223,16 +224,21 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 
                 Matrix matrix = new Matrix();
                 matrix.setScale(scaleWidth, scaleHeight);
+                startTime = System.currentTimeMillis();
+                Log.d("bitmap length", mBitmap.getByteCount() + "");
+                endTime = System.currentTimeMillis();
+                Log.d(TAG, "相机返回帧数据处理为bitmap消耗的时间为： " + (endTime - startTime) + " ms");
+                Log.d(TAG, "----------------end------------------");
+                Log.d("bitmap length", input_bmp.getByteCount() + "");
+
                 mCanvas.drawBitmap(mBitmap, matrix, paint);
-                final Bitmap input_bmp = Bitmap.createScaledBitmap(mBitmap, dims[2], dims[3], false);
 
 
                 if (!isRunning) {
                     isRunning = true;
                     new Thread(new Runnable() {
                         public void run() {
-                            if (input_bmp != null)
-                                result = Yolo.Detect(input_bmp);
+                            result = Yolo.Detect(input_bmp);
                             isRunning = false;
                         }
                     }).start();
@@ -253,6 +259,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public Bitmap yuvToBitmap(byte[] yuv, int width, int height) {
+
         if (yuvType == null) {
             yuvType = new Type.Builder(rs, Element.U8(rs)).setX(yuv.length);
             in = Allocation.createTyped(rs, yuvType.create(), Allocation.USAGE_SCRIPT);//分配内存
