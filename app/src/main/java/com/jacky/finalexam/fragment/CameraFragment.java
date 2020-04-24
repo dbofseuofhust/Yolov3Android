@@ -73,8 +73,8 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
 
     private static final String TAG = "CameraFragment";
     private Point displaySize = new Point();
-    private static final int MAX_PREVIEW_WIDTH = 1280;
-    private static final int MAX_PREVIEW_HEIGHT = 720;
+    private static final int MAX_PREVIEW_WIDTH = 640;
+    private static final int MAX_PREVIEW_HEIGHT = 480;
 
     private final TextureView.SurfaceTextureListener mSurfaceTextureListener
             = new TextureView.SurfaceTextureListener() {
@@ -459,7 +459,7 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
                 //fix size 1280XN
                 for(Size item : outlist)
                 {
-                    if(item.getWidth() == 1280)
+                    if(item.getWidth() == 640)
                     {
                         Log.i(TAG, "get  target resv is " +item.getWidth() + "X" + item.getHeight());
                         mPreviewSize = item;
@@ -479,7 +479,7 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
                 }
 
                 mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
-                        ImageFormat.YUV_420_888, /*maxImages*/2);
+                        ImageFormat.YUV_420_888, /*maxImages*/1);
                 mImageReader.setOnImageAvailableListener(
                         mOnImageAvailableListener, mBackgroundHandler);
 
