@@ -18,11 +18,14 @@ package com.jacky.finalexam.view;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
@@ -38,6 +41,7 @@ import com.jacky.finalexam.App;
 import com.jacky.finalexam.jni.Yolo;
 import com.jacky.finalexam.utils.Util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -194,25 +198,29 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         long startTime, endTime;
         Log.d(TAG, "draw " + data.length + " " + width + "X" + height);
         if (data != null) {
+            startTime = System.currentTimeMillis();
+            Log.d("test", "-------------start----------------");
 
 //            final YuvImage image = new YuvImage(data, ImageFormat.NV21, width, height, null);
 //            ByteArrayOutputStream stream = new ByteArrayOutputStream();
 //            image.compressToJpeg(new Rect(0, 0, width, height), 100, stream);
 
             mBitmap = yuvToBitmap(data, width, height);
-            final Bitmap input_bmp = Bitmap.createScaledBitmap(mBitmap, dims[2], dims[3], false);
 
 
 //            mBitmap = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
 //            Bitmap rgbout = mBitmap.copy(Bitmap.Config.ARGB_8888, true);
+            endTime = System.currentTimeMillis();
+            Log.d("test", "yuv to bitmap time cost： " + (endTime - startTime) + " ms");
+            Log.d("test", "----------------end------------------");
 
+            final Bitmap inputBitmap = Bitmap.createScaledBitmap(mBitmap, dims[2], dims[3], false);
             if (mBitmap == null) {
                 Log.d(TAG, "data data is to bitmap error");
                 return;
             }
 
             try {
-                Log.d(TAG, "-------------start----------------");
                 mCanvas = mHolder.lockCanvas();
                 mWidth = mCanvas.getWidth();
                 mHeight = mCanvas.getHeight();
@@ -224,21 +232,17 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 
                 Matrix matrix = new Matrix();
                 matrix.setScale(scaleWidth, scaleHeight);
-                startTime = System.currentTimeMillis();
                 Log.d("bitmap length", mBitmap.getByteCount() + "");
-                endTime = System.currentTimeMillis();
-                Log.d(TAG, "相机返回帧数据处理为bitmap消耗的时间为： " + (endTime - startTime) + " ms");
-                Log.d(TAG, "----------------end------------------");
-                Log.d("bitmap length", input_bmp.getByteCount() + "");
-
                 mCanvas.drawBitmap(mBitmap, matrix, paint);
+                Log.d("bitmap length", inputBitmap.getByteCount() + "");
+
 
 
                 if (!isRunning) {
                     isRunning = true;
                     new Thread(new Runnable() {
                         public void run() {
-                            result = Yolo.Detect(input_bmp);
+                            result = Yolo.Detect(inputBitmap);
                             isRunning = false;
                         }
                     }).start();

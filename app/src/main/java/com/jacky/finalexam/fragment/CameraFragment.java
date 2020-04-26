@@ -34,7 +34,6 @@ import android.util.SparseIntArray;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.SurfaceView;
-import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
@@ -73,32 +72,8 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
 
     private static final String TAG = "CameraFragment";
     private Point displaySize = new Point();
-    private static final int MAX_PREVIEW_WIDTH = 640;
-    private static final int MAX_PREVIEW_HEIGHT = 480;
-
-    private final TextureView.SurfaceTextureListener mSurfaceTextureListener
-            = new TextureView.SurfaceTextureListener() {
-
-        @Override
-        public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
-            openCamera(width, height);
-        }
-
-        @Override
-        public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
-            configureTransform(width, height);
-        }
-
-        @Override
-        public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
-            return true;
-        }
-
-        @Override
-        public void onSurfaceTextureUpdated(SurfaceTexture texture) {
-        }
-
-    };
+    private static final int MAX_PREVIEW_WIDTH = 1280;
+    private static final int MAX_PREVIEW_HEIGHT = 720;
 
     private final SurfaceView.OnAttachStateChangeListener mSurfaveViewListener =
             new SurfaceView.OnAttachStateChangeListener() {
@@ -118,7 +93,7 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
 
     private String mCameraId;
 
-    private CameraView mSurfaceView;
+    private CameraView cameraView;
 
     //private CameraCaptureSession mCaptureSession;
     private CameraCaptureSession mCaptureYUVSession;
@@ -198,7 +173,7 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
 
                 Log.d(TAG, "---------------start-----------");
                 startTime = System.currentTimeMillis();
-                mSurfaceView.draw(yuv, width, height, 270);
+                cameraView.draw(yuv, width, height, 270);
             }
             lock.unlock();
             im.close();
@@ -308,7 +283,7 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
-        mSurfaceView = (CameraView) view.findViewById(R.id.texture);
+        cameraView = (CameraView) view.findViewById(R.id.texture);
 
     }
 
@@ -333,10 +308,10 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
         // a camera and start preview from here (otherwise, we wait until the surface is ready in
         // the SurfaceTextureListener).
-        if (mSurfaceView.isActivated()) {
-            openCamera(mSurfaceView.getWidth(), mSurfaceView.getHeight());
+        if (cameraView.isActivated()) {
+            openCamera(cameraView.getWidth(), cameraView.getHeight());
         } else {
-            mSurfaceView.addOnAttachStateChangeListener(mSurfaveViewListener);
+            cameraView.addOnAttachStateChangeListener(mSurfaveViewListener);
         }
     }
 
@@ -451,15 +426,15 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
                 // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
                 // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
                 // garbage capture data.
-                mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                        rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth,
-                        maxPreviewHeight, largest);
+//                mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+//                        rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth,
+//                        maxPreviewHeight, largest);
 
 
                 //fix size 1280XN
                 for(Size item : outlist)
                 {
-                    if(item.getWidth() == 640)
+                    if(item.getWidth() == 1280)
                     {
                         Log.i(TAG, "get  target resv is " +item.getWidth() + "X" + item.getHeight());
                         mPreviewSize = item;
@@ -471,10 +446,10 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
                 // We fit the aspect ratio of TextureView to the size of preview we picked.
                 int orientation = getResources().getConfiguration().orientation;
                 if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                    mSurfaceView.setAspectRatio(
+                    cameraView.setAspectRatio(
                             mPreviewSize.getWidth(), mPreviewSize.getHeight());
                 } else {
-                    mSurfaceView.setAspectRatio(
+                    cameraView.setAspectRatio(
                             mPreviewSize.getHeight(), mPreviewSize.getWidth());
                 }
 
@@ -567,7 +542,7 @@ public class CameraFragment extends Fragment implements View.OnClickListener, Ac
 
     private void configureTransform(int viewWidth, int viewHeight) {
         Activity activity = getActivity();
-        if (null == mSurfaceView || null == mPreviewSize || null == activity) {
+        if (null == cameraView || null == mPreviewSize || null == activity) {
             return;
         }
         int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
