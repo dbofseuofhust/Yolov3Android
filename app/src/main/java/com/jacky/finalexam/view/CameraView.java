@@ -250,6 +250,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
                 if (null != result) {
                     drawDetect(result, (int) mWidth, (int) mHeight, rolatedeg);
                 }
+                mBitmap.recycle();
             } catch (Exception e) {
                 Log.d(TAG, "e=" + e);
                 mHolder.unlockCanvasAndPost(mCanvas);
