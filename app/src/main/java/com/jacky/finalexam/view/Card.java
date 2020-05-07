@@ -12,23 +12,48 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 
-public class Card extends RecyclerView.LayoutManager{
+public class Card extends RecyclerView.LayoutManager {
 
+    /**
+     * 一次完整滑动所需要的移动距离
+     */
     private float onceWholeScrollLength = -1;
 
+    /**
+     * 第一个子View的偏移量
+     */
     private float firstChildOffsetLength = -1;
 
+    /**
+     * 屏幕中可见的第一个View的序号
+     */
     private int mFirstViewPos;
 
+    /**
+     * 屏幕可见的最后一个View的序号
+     */
     private int mLastViewPos;
 
+    /**
+     * 水平方向累计的偏移量
+     */
     private long mHorizontalOffset;
 
+    /**
+     * 子View之间的margin
+     */
     private float normalViewLength = 30;
 
     private int childWidth = 0;
 
+    /**
+     * 是否自动选中
+     */
     private boolean isAutoSelected = true;
+
+    /**
+     * 选中动画
+     */
     private ValueAnimator selectedAnimator;
 
     @Override
@@ -51,7 +76,7 @@ public class Card extends RecyclerView.LayoutManager{
     @Override
     public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
 //        super.onLayoutChildren(recycler, state);
-        if(state.getItemCount() == 0) {
+        if (state.getItemCount() == 0) {
             removeAndRecycleAllViews(recycler);
             return;
         }
@@ -82,7 +107,7 @@ public class Card extends RecyclerView.LayoutManager{
         }
 
         float realDx = dx / 1.0f;
-        if(Math.abs(realDx) < 0.00000001f) {
+        if (Math.abs(realDx) < 0.00000001f) {
             return 0;
         }
 
@@ -92,24 +117,24 @@ public class Card extends RecyclerView.LayoutManager{
     }
 
     private float getMaxOffset() {
-        if(0 == childWidth || getItemCount() == 0) return 0;
+        if (0 == childWidth || getItemCount() == 0) return 0;
         return (childWidth + normalViewLength) * (getItemCount() - 1);
     }
 
     private float getMinOffset() {
-        if(childWidth == 0) return 0;
+        if (childWidth == 0) return 0;
         return (getWidth() - childWidth) / 2;
     }
 
     private int fillHorizongtalLeft(RecyclerView.Recycler recycler, RecyclerView.State state, int dx) {
-        if(dx < 0) {
-            if(mHorizontalOffset < 0) {
+        if (dx < 0) {
+            if (mHorizontalOffset < 0) {
                 mHorizontalOffset = dx = 0;
             }
         }
 
-        if(dx > 0) {
-            if(mHorizontalOffset >= getMaxOffset()) {
+        if (dx > 0) {
+            if (mHorizontalOffset >= getMaxOffset()) {
                 mHorizontalOffset -= dx;
                 mHorizontalOffset = (long) getMaxOffset();
                 dx = 0;
@@ -125,15 +150,15 @@ public class Card extends RecyclerView.LayoutManager{
         View tempView = null;
         int tempPosition = -1;
 
-        if(onceWholeScrollLength == -1) {
+        if (onceWholeScrollLength == -1) {
             tempPosition = mFirstViewPos;
             tempView = recycler.getViewForPosition(tempPosition);
-            measureChildWithMargins(tempView, 0 ,0);
+            measureChildWithMargins(tempView, 0, 0);
             childWidth = getDecoratedMeasurementHorizontal(tempView);
         }
 
         firstChildOffsetLength = getWidth() / 2 + childWidth / 2;
-        if(mHorizontalOffset >= firstChildOffsetLength) {
+        if (mHorizontalOffset >= firstChildOffsetLength) {
             startX = normalViewLength;
             onceWholeScrollLength = childWidth + normalViewLength;
             mFirstViewPos = (int) (Math.floor(Math.abs(mHorizontalOffset - firstChildOffsetLength) / onceWholeScrollLength) + 1);
@@ -142,7 +167,7 @@ public class Card extends RecyclerView.LayoutManager{
             mFirstViewPos = 0;
             startX = getMinOffset();
             onceWholeScrollLength = firstChildOffsetLength;
-            fraction = (Math.abs(mHorizontalOffset) % onceWholeScrollLength) /(onceWholeScrollLength / 1.0f);
+            fraction = (Math.abs(mHorizontalOffset) % onceWholeScrollLength) / (onceWholeScrollLength / 1.0f);
         }
 
         mLastViewPos = getItemCount() - 1;
@@ -152,7 +177,7 @@ public class Card extends RecyclerView.LayoutManager{
 
         for (int i = mFirstViewPos; i <= mLastViewPos; i++) {
             View item;
-            if(i == tempPosition && tempView != null) {
+            if (i == tempPosition && tempView != null) {
                 item = tempView;
             } else {
                 item = recycler.getViewForPosition(i);
@@ -166,7 +191,7 @@ public class Card extends RecyclerView.LayoutManager{
             }
             measureChildWithMargins(item, 0, 0);
 
-            if(!isNormalViewOffset) {
+            if (!isNormalViewOffset) {
                 startX -= normalViewOffset;
                 isNormalViewOffset = true;
             }
@@ -184,12 +209,12 @@ public class Card extends RecyclerView.LayoutManager{
 
             isChildLayoutLeft = childCenterX <= parentCenterX;
 
-            if(isChildLayoutLeft) {
+            if (isChildLayoutLeft) {
                 final float fractionScale = (parentCenterX - childCenterX) / (parentCenterX * 1.0f);
                 currentScale = 1.0f - (1.0f - minScale) * fractionScale;
             } else {
                 final float fractionScale = (childCenterX - parentCenterX) / (parentCenterX * 1.0f);
-                currentScale = 1.0f  - (1.0f - minScale) * fractionScale;
+                currentScale = 1.0f - (1.0f - minScale) * fractionScale;
             }
             item.setScaleX(currentScale);
             item.setScaleY(currentScale);
@@ -198,7 +223,7 @@ public class Card extends RecyclerView.LayoutManager{
 
             startX += (childWidth + normalViewLength);
 
-            if(startX > getWidth() - getPaddingRight()) {
+            if (startX > getWidth() - getPaddingRight()) {
                 mLastViewPos = i;
                 break;
             }
@@ -214,7 +239,7 @@ public class Card extends RecyclerView.LayoutManager{
                 cancelAnimator();
                 break;
             case RecyclerView.SCROLL_STATE_IDLE:
-                if(isAutoSelected) {
+                if (isAutoSelected) {
                     smoothScrollToPosition(findShouldSelectPosition(), null);
                 }
                 break;
