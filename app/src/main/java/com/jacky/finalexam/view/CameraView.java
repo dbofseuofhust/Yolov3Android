@@ -19,14 +19,11 @@ package com.jacky.finalexam.view;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.YuvImage;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
@@ -36,20 +33,15 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.TextureView;
 
 import com.jacky.finalexam.App;
 import com.jacky.finalexam.jni.Yolo;
 import com.jacky.finalexam.utils.Util;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-/**
- * A {@link TextureView} that can be adjusted to a specified aspect ratio.
- */
 public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     private static final String TAG = "CameraView";
 
@@ -109,19 +101,6 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         yuvToRgbIntrinsic = ScriptIntrinsicYuvToRGB.create(rs, Element.U8_4(rs));
     }
 
-    public void setAspectRatio(int width, int height) {
-        if (width < 0 || height < 0) {
-            throw new IllegalArgumentException("Size cannot be negative.");
-        }
-        Log.i(TAG, "setAspectRatio " + width + "X" + height);
-        requestLayout();
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-    }
-
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         Log.i(TAG, "surfaceCreated ");
@@ -152,23 +131,13 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         mCanvas.drawText(string, rect.left + 4, rect.top + 14, paint);
     }
 
-    static private int class_color[] = {
-            Color.YELLOW, Color.GREEN, Color.BLUE, Color.YELLOW, Color.BLUE,
-            Color.YELLOW, Color.BLUE, Color.BLUE, Color.YELLOW, Color.YELLOW,
-            Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW,
-            Color.RED, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW,
-            Color.YELLOW,
-    };
-
-
     public void drawDetect(float[] data, int width, int height, int rolatedeg) {
         int obj = 0;
         int num = data.length / 6;
-        int t, x, y, xe, ye;
+        int x, y, xe, ye;
         float[][] finalArray = Util.twoArray(data);
 
         for (obj = 0; obj < num; obj++) {
-            t = (int) finalArray[obj][1];
             x = (int) (finalArray[obj][2] * width);
             y = (int) (finalArray[obj][3] * height);
             xe = (int) (finalArray[obj][4] * width);
@@ -228,6 +197,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 //            mBitmap = null;
 //            mBitmap = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
 
+            //将holder持有的surface界面作为画布，在上面绘图
             try {
                 mCanvas = mHolder.lockCanvas();
                 mWidth = mCanvas.getWidth();
@@ -243,7 +213,6 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
                 Log.d("bitmap length", mBitmap.getByteCount() + "");
                 mCanvas.drawBitmap(mBitmap, matrix, paint);
                 Log.d("bitmap length", inputBitmap.getByteCount() + "");
-
 
 
                 if (!isRunning) {
@@ -268,7 +237,6 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
             mHolder.unlockCanvasAndPost(mCanvas);
         } else {
             Log.d(TAG, "data data is null");
-            return;
         }
     }
 

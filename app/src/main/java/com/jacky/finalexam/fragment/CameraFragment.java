@@ -7,9 +7,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.graphics.ImageFormat;
-import android.graphics.Point;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -26,7 +24,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
 import android.util.Size;
-import android.util.SparseIntArray;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -46,7 +43,6 @@ import com.jacky.finalexam.view.CameraView;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -54,29 +50,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class CameraFragment extends Fragment implements ActivityCompat.OnRequestPermissionsResultCallback {
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
-
-
-    static {
-        ORIENTATIONS.append(Surface.ROTATION_0, 90);
-        ORIENTATIONS.append(Surface.ROTATION_90, 0);
-        ORIENTATIONS.append(Surface.ROTATION_180, 270);
-        ORIENTATIONS.append(Surface.ROTATION_270, 180);
-    }
-
     private static final String TAG = "CameraFragment";
-    private Point displaySize = new Point();
-    private static final int MAX_PREVIEW_WIDTH = 1280;
-    private static final int MAX_PREVIEW_HEIGHT = 720;
 
-    private final SurfaceView.OnAttachStateChangeListener mSurfaveViewListener =
+    private final SurfaceView.OnAttachStateChangeListener mSurfaceViewListener =
             new SurfaceView.OnAttachStateChangeListener() {
                 public void onViewAttachedToWindow(View v) {
-                    Log.i(TAG, "onViewAttachedToWindow " + MAX_PREVIEW_WIDTH + "X" + MAX_PREVIEW_HEIGHT);
-                    getActivity().getWindowManager().getDefaultDisplay().getSize(displaySize);
-                    openCamera(displaySize.x, displaySize.y);
+                    openCamera();
                 }
 
                 public void onViewDetachedFromWindow(View v) {
@@ -88,7 +69,6 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
 
     private CameraView cameraView;
 
-    //private CameraCaptureSession mCaptureSession;
     private CameraCaptureSession mCaptureYUVSession;
 
     private CameraDevice mCameraDevice;
@@ -98,7 +78,6 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
 
         @Override
         public void onOpened(@NonNull CameraDevice cameraDevice) {
-            // This method is called when the camera is opened.  We start camera preview here.
             mCameraOpenCloseLock.release();
             mCameraDevice = cameraDevice;
 
@@ -130,7 +109,6 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
     private Handler mBackgroundHandler;
     private ImageReader mImageReader;
 
-    long startTime, endTime;
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
      * still image is ready to be saved.
@@ -148,6 +126,7 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
             int height = im.getHeight();
 
             lock.lock();
+            long startTime;
             {
                 Log.d(TAG, "onImageAvailable " + width + "X" + height + "X" + planesLength);
 
@@ -170,7 +149,7 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
             }
             lock.unlock();
             im.close();
-            endTime = System.currentTimeMillis();
+            long endTime = System.currentTimeMillis();
             Log.d(TAG, "----------------end-------------");
             Log.d(TAG, "cost time: " + (endTime - startTime));
         }
@@ -242,9 +221,9 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
         super.onResume();
         startBackgroundThread();
         if (cameraView.isActivated()) {
-            openCamera(cameraView.getWidth(), cameraView.getHeight());
+            openCamera();
         } else {
-            cameraView.addOnAttachStateChangeListener(mSurfaveViewListener);
+            cameraView.addOnAttachStateChangeListener(mSurfaceViewListener);
         }
     }
 
@@ -277,7 +256,7 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
         }
     }
 
-    private void setUpCameraOutputs(int width, int height) {
+    private void setUpCameraOutputs() {
         Activity activity = getActivity();
         assert activity != null;
         CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
@@ -299,33 +278,23 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
                     continue;
                 }
 
-                List<Size> outlist = Arrays.asList(map.getOutputSizes(ImageFormat.YUV_420_888));
-                Log.i(TAG, "Output list =" + outlist);
+                List<Size> outList = Arrays.asList(map.getOutputSizes(ImageFormat.YUV_420_888));
+                Log.i(TAG, "Output list =" + outList);
 
-
-                activity.getWindowManager().getDefaultDisplay().getSize(displaySize);
 
                 // 当获取的集合中有1280为宽度的子项，就将它当成我们要使用的预览对象
-                for (Size item : outlist) {
-                    if (item.getWidth() == 1280) {
-                        Log.i(TAG, "get  target resv is " + item.getWidth() + "X" + item.getHeight());
+                for (Size item : outList) {
+                    if (item.getHeight() == 720) {
+                        Log.i(TAG, "get target size is " + item.getWidth() + "X" + item.getHeight());
                         mPreviewSize = item;
                     }
                 }
 
                 Log.i(TAG, "get mPreviewSize " + mPreviewSize);
-                // 根据当前屏幕的横竖屏情况设置预览的宽和高
-                int orientation = getResources().getConfiguration().orientation;
-                if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                    cameraView.setAspectRatio(
-                            mPreviewSize.getWidth(), mPreviewSize.getHeight());
-                } else {
-                    cameraView.setAspectRatio(
-                            mPreviewSize.getHeight(), mPreviewSize.getWidth());
-                }
                 // ImageReader类的作用就是给我们的apk提供一个获取渲染到surfaceView中的图像帧数据的工具
                 mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
                         ImageFormat.YUV_420_888, /*maxImages*/2);
+                // 设置图像获取的监听器
                 mImageReader.setOnImageAvailableListener(
                         mOnImageAvailableListener, mBackgroundHandler);
 
@@ -343,14 +312,13 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
         }
     }
 
-    private void openCamera(int width, int height) {
+    private void openCamera() {
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             requestCameraPermission();
             return;
         }
-        Log.i(TAG, "openCamera " + width + "X" + height);
-        setUpCameraOutputs(width, height);
+        setUpCameraOutputs();
         Activity activity = getActivity();
         CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
@@ -457,12 +425,12 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
                                 return;
                             }
 
-                            // session 准备好后开启预览
+                            // session 准备好后获取预览数据
                             mCaptureYUVSession = cameraCaptureSession;
                             try {
 
                                 mCaptureYUVSession.stopRepeating();
-                                // 开启预览
+                                // 开启获取图像预览数据
                                 mPreviewYUVRequest = mPreviewYUVRequestBuilder.build();
                                 mCaptureYUVSession.setRepeatingRequest(mPreviewYUVRequest,
                                         null, mBackgroundHandler);

@@ -11,10 +11,6 @@ import com.jacky.finalexam.R;
 import com.jacky.finalexam.fragment.CameraFragment;
 
 public class DetectActivity extends BaseActivity {
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-    }
 
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
@@ -23,12 +19,12 @@ public class DetectActivity extends BaseActivity {
         if (getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
-
+        // 屏幕常亮
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         setContentView(R.layout.activity_detect);
         Log.i("TAG", "onCreate");
-
+        // 加载fragment
         if (null == savedInstanceState) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.container, CameraFragment.newInstance())
@@ -36,6 +32,7 @@ public class DetectActivity extends BaseActivity {
         }
 
     }
+
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
