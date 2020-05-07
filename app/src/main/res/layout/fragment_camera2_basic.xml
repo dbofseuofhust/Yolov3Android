@@ -19,7 +19,7 @@
     android:layout_height="match_parent">
 
     <com.jacky.finalexam.view.CameraView
-        android:id="@+id/texture"
+        android:id="@+id/surface"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_alignParentStart="true"

@@ -9,9 +9,7 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.ImageFormat;
-import android.graphics.Matrix;
 import android.graphics.Point;
-import android.graphics.RectF;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -27,11 +25,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
-import android.util.Range;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.LayoutInflater;
 import android.view.Surface;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -144,7 +142,7 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            Image im = reader.acquireNextImage(); //
+            Image im = reader.acquireLatestImage(); //
             int planesLength = im.getPlanes().length;
             int width = im.getWidth();
             int height = im.getHeight();
@@ -224,7 +222,7 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
-        cameraView = (CameraView) view.findViewById(R.id.texture);
+        cameraView = view.findViewById(R.id.surface);
 
     }
 
@@ -289,7 +287,7 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
                 CameraCharacteristics characteristics
                         = manager.getCameraCharacteristics(cameraId);
 
-                // We don't use a front facing camera in this sample.
+                // 不获取前置摄像头
                 Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
                 if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
                     continue;
@@ -304,9 +302,6 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
                 List<Size> outlist = Arrays.asList(map.getOutputSizes(ImageFormat.YUV_420_888));
                 Log.i(TAG, "Output list =" + outlist);
 
-                // For still image captures, we use the largest available size.
-                Size largest = Collections.max(outlist, new CompareSizesByArea());
-                Log.i(TAG, "Output =" + largest);
 
                 activity.getWindowManager().getDefaultDisplay().getSize(displaySize);
 
@@ -330,7 +325,7 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
                 }
                 // ImageReader类的作用就是给我们的apk提供一个获取渲染到surfaceView中的图像帧数据的工具
                 mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
-                        ImageFormat.YUV_420_888, /*maxImages*/1);
+                        ImageFormat.YUV_420_888, /*maxImages*/2);
                 mImageReader.setOnImageAvailableListener(
                         mOnImageAvailableListener, mBackgroundHandler);
 
@@ -359,7 +354,7 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
         Activity activity = getActivity();
         CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
-            // 2.5秒内只允许打开一次相机
+            // 2.5秒内打开一次相机
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
@@ -438,13 +433,20 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
 
     private void createCameraYUVSession() {
         try {
+
+            SurfaceHolder holder = cameraView.getHolder();
+            holder.setKeepScreenOn(true);
+            Surface surface = holder.getSurface();
+            assert surface != null;
+
             // We set up a CaptureRequest.Builder with the output Surface.
             mPreviewYUVRequestBuilder
                     = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             mPreviewYUVRequestBuilder.addTarget(mImageReader.getSurface());
+            //ImageReader的getSurface()方法获取一个生成image对象的Surface，ImageReader的对象获取的Image对象就是从这个Surface中生成的。
 
 
-            // Here, we create a CameraCaptureSession for camera preview.
+            // 创建一个 session 用于预览，但是我们的处理没有将预览加入到我们的CameraView中，所以这里没有实现预览，只是获取了预览的数据
             mCameraDevice.createCaptureSession(Arrays.asList(mImageReader.getSurface()),
                     new CameraCaptureSession.StateCallback() {
 
@@ -455,14 +457,15 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
                                 return;
                             }
 
-                            // When the session is ready, we start displaying the preview.
+                            // session 准备好后开启预览
                             mCaptureYUVSession = cameraCaptureSession;
                             try {
 
-                                // Finally, we start displaying the camera preview.
+                                mCaptureYUVSession.stopRepeating();
+                                // 开启预览
                                 mPreviewYUVRequest = mPreviewYUVRequestBuilder.build();
                                 mCaptureYUVSession.setRepeatingRequest(mPreviewYUVRequest,
-                                        mCaptureCallback, mBackgroundHandler);
+                                        null, mBackgroundHandler);
                             } catch (CameraAccessException e) {
                                 e.printStackTrace();
                             }

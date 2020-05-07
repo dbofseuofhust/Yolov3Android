@@ -16,6 +16,7 @@
 
 package com.jacky.finalexam.view;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -44,6 +45,7 @@ import com.jacky.finalexam.utils.Util;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
@@ -69,8 +71,6 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     private float mHeight = 0;
 
     private void initYolo() throws IOException {
-        boolean isLoad = false;
-
 
         String paramPath = Util.getPathFromAssets(App.getContext(), "yolov3-tiny.param");
         String binPath = Util.getPathFromAssets(App.getContext(), "yolov3-tiny.bin");
@@ -138,6 +138,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         Log.i(TAG, "surfaceDestroyed ");
+        Yolo = null;
     }
 
     private void drawRect(Rect rect, int color, String string) {
@@ -186,7 +187,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
                 ye = height;
             }
 
-            drawRect(new Rect(x, y, xe, ye), class_color[t], resultLabel.get((int) finalArray[obj][0]));
+            drawRect(new Rect(x, y, xe, ye), Color.GREEN, resultLabel.get((int) finalArray[obj][0]));
         }
 
     }
@@ -194,6 +195,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     private float[] result;
     private boolean isRunning;
 
+    @SuppressLint("WrongThread")
     public void draw(byte[] data, int width, int height, int rolatedeg) {
         long startTime, endTime;
         Log.d(TAG, "draw " + data.length + " " + width + "X" + height);
@@ -219,6 +221,12 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
                 Log.d(TAG, "data data is to bitmap error");
                 return;
             }
+//
+//
+//            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+//            mBitmap.compress(Bitmap.CompressFormat.JPEG, 10, stream);
+//            mBitmap = null;
+//            mBitmap = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
 
             try {
                 mCanvas = mHolder.lockCanvas();
@@ -243,6 +251,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
                     new Thread(new Runnable() {
                         public void run() {
                             result = Yolo.Detect(inputBitmap);
+                            Log.d(TAG, "result: " + Arrays.toString(result));
                             isRunning = false;
                         }
                     }).start();
