@@ -41,6 +41,8 @@ import com.jacky.finalexam.utils.Util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     private static final String TAG = "CameraView";
@@ -138,6 +140,12 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         float[][] finalArray = Util.twoArray(data);
 
         for (obj = 0; obj < num; obj++) {
+
+            Paint paint = new Paint();
+            paint.setColor(Color.GREEN);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(2);
+
             x = (int) (finalArray[obj][2] * width);
             y = (int) (finalArray[obj][3] * height);
             xe = (int) (finalArray[obj][4] * width);
@@ -156,7 +164,31 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
                 ye = height;
             }
 
-            drawRect(new Rect(x, y, xe, ye), Color.GREEN, resultLabel.get((int) finalArray[obj][0]));
+            mCanvas.drawRect(x, y, xe, ye, paint);
+
+            String text = resultLabel.get((int) finalArray[obj][0]) + " = " + String.format("%.1f", finalArray[obj][1] * 100) + "%";
+
+            Paint textbgpaint = new Paint();
+            textbgpaint.setColor(Color.RED);
+            textbgpaint.setStyle(Paint.Style.FILL);
+
+            Paint textpaint = new Paint();
+            textpaint.setColor(Color.WHITE);
+            textpaint.setTextSize(24);
+            textpaint.setTextAlign(Paint.Align.LEFT);
+
+            float text_width = textpaint.measureText(text);
+            float text_height = - textpaint.ascent() + textpaint.descent();
+
+            float xt = x;
+            float yt = y - text_height;
+            if (yt < 0)
+                yt = 0;
+            if (xt + text_width > width)
+                xt = width - text_width;
+
+            mCanvas.drawRect(xt, yt, xt + text_width, yt + text_height, textbgpaint);
+            mCanvas.drawText(text, xt, yt - textpaint.ascent(), textpaint);
         }
 
     }
@@ -172,7 +204,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
             startTime = System.currentTimeMillis();
             Log.d("test", "-------------start----------------");
 
-//            final YuvImage image = new YuvImage(data, ImageFormat.NV21, width, height, null);
+//            final YuvImage image = new Yu vImage(data, ImageFormat.NV21, width, height, null);
 //            ByteArrayOutputStream stream = new ByteArrayOutputStream();
 //            image.compressToJpeg(new Rect(0, 0, width, height), 100, stream);
 
@@ -217,13 +249,16 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 
                 if (!isRunning) {
                     isRunning = true;
+                    ExecutorService service = Executors.newSingleThreadExecutor();
+                    service.submit(
                     new Thread(new Runnable() {
                         public void run() {
                             result = Yolo.Detect(inputBitmap);
                             Log.d(TAG, "result: " + Arrays.toString(result));
                             isRunning = false;
                         }
-                    }).start();
+                    }));
+                    service.shutdown();
                 }
                 if (null != result) {
                     drawDetect(result, (int) mWidth, (int) mHeight, rolatedeg);
