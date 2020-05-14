@@ -86,7 +86,7 @@ Java_com_jacky_finalexam_jni_Yolo_Detect(JNIEnv *env, jobject thiz, jobject bitm
     ex.set_num_threads(4);
 
     ncnn::Mat out;
-    int result = ex.extract("yolo_23", out); //yolo_23 is the out_blob name in param file
+    int result = ex.extract("yolo_106", out); // yolo_23 is the out_blob name in param file for yolov3 tiny and yolo_106 for yolov3
     __android_log_print(ANDROID_LOG_DEBUG, "yolov3", "extract stop %d", result);
     if (result != 0)
         return NULL;

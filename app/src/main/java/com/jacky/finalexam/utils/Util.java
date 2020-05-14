@@ -17,7 +17,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -103,7 +102,7 @@ public class Util {
     public static void loadLabels(ArrayList<String> list, Context context) {
         try {
             AssetManager assetManager = context.getAssets();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(assetManager.open("coco.names")));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(assetManager.open("ori_coco.names")));
             String readLine = null;
             while ((readLine = reader.readLine()) != null) {
                 list.add(readLine);

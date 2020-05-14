@@ -42,19 +42,30 @@ public class GalleryActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gallery);
 //        CameraView cameraView = findViewById(R.id.camera);
+        initView();
+        Util.loadLabels(resultLabel, this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         try {
             initYolo();
         } catch (IOException e) {
             Log.e("MainActivity", "init yolo error");
         }
-        initView();
-        Util.loadLabels(resultLabel, this);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Yolo = null;
     }
 
     private void initYolo() throws IOException {
 
-        String paramPath = Util.getPathFromAssets(this, "yolov3-tiny.param");
-        String binPath = Util.getPathFromAssets(this, "yolov3-tiny.bin");
+        String paramPath = Util.getPathFromAssets(this, "yolov3-416.param");
+        String binPath = Util.getPathFromAssets(this, "yolov3-416.bin");
 
         isLoad = Yolo.Init(paramPath, binPath);
         Log.d(TAG, "load model success?:" + isLoad);
@@ -108,11 +119,11 @@ public class GalleryActivity extends BaseActivity {
             return;
         }
         Bitmap rgba = bmp.copy(Bitmap.Config.ARGB_8888, true);
-        Bitmap input_bmp = Bitmap.createScaledBitmap(rgba, dims[2], dims[3], false);
+//        Bitmap input_bmp = Bitmap.createScaledBitmap(rgba, dims[2], dims[3], false);
         try {
 
             long startTime = System.currentTimeMillis();
-            float[] result = Yolo.Detect(input_bmp);
+            float[] result = Yolo.Detect(rgba);
             if (result == null) {
                 out.setText(getResources().getString(R.string.predict_result));
                 Log.d(TAG, "predict result is null");
@@ -132,28 +143,47 @@ public class GalleryActivity extends BaseActivity {
             }
             out.setText(resultContent.toString());
             Canvas canvas = new Canvas(rgba);
-            Paint paint = new Paint();
-            paint.setColor(Color.RED);
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(1);
 
             float[][] finalArray = Util.twoArray(result);
             int obj = 0;
             int num = result.length / 6;
             for (obj = 0; obj < num; obj++) {
-                paint.setColor(Color.RED);
+
+                Paint paint = new Paint();
+                paint.setColor(Color.GREEN);
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeWidth(1);
+
                 canvas.drawRect(finalArray[obj][2] * rgba.getWidth(),
                         finalArray[obj][3] * rgba.getHeight(),
                         finalArray[obj][4] * rgba.getWidth(),
                         finalArray[obj][5] * rgba.getHeight(), paint);
 
-                paint.setColor(Color.YELLOW);
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(1);
-                canvas.drawText(resultLabel.get((int) finalArray[obj][0]),
-                        finalArray[obj][2] * rgba.getWidth(), finalArray[obj][3] * rgba.getHeight(), paint);
+                Paint textbgpaint = new Paint();
+                textbgpaint.setColor(Color.RED);
+                textbgpaint.setStyle(Paint.Style.FILL);
+
+                Paint textpaint = new Paint();
+                textpaint.setColor(Color.WHITE);
+                textpaint.setTextSize(16);
+                textpaint.setTextAlign(Paint.Align.LEFT);
+
+                String text = resultLabel.get((int) finalArray[obj][0]) + " = " + String.format("%.1f", finalArray[obj][1] * 100) + "%";
+
+                float text_width = textpaint.measureText(text);
+                float text_height = - textpaint.ascent() + textpaint.descent();
+
+                float x = finalArray[obj][2]*rgba.getWidth();
+                float y = finalArray[obj][3]*rgba.getHeight() - text_height;
+                if (y < 0)
+                    y = 0;
+                if (x + text_width > rgba.getWidth())
+                    x = rgba.getWidth() - text_width;
+
+                canvas.drawRect(x, y, x + text_width, y + text_height, textbgpaint);
+                canvas.drawText(text, x, y - textpaint.ascent(), textpaint);
+
+
             }
             show.setImageBitmap(rgba);
 
