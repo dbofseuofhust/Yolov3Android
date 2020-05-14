@@ -109,6 +109,8 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
     private Handler mBackgroundHandler;
     private ImageReader mImageReader;
 
+    private boolean mDetect_isbusy = false;
+
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
      * still image is ready to be saved.
@@ -121,37 +123,40 @@ public class CameraFragment extends Fragment implements ActivityCompat.OnRequest
         @Override
         public void onImageAvailable(ImageReader reader) {
             Image im = reader.acquireLatestImage(); //
-            int planesLength = im.getPlanes().length;
-            int width = im.getWidth();
-            int height = im.getHeight();
+            if (im != null){
+                int planesLength = im.getPlanes().length;
+                int width = im.getWidth();
+                int height = im.getHeight();
 
-            lock.lock();
-            long startTime;
-            {
-                Log.d(TAG, "onImageAvailable " + width + "X" + height + "X" + planesLength);
+                lock.lock();
+                long startTime;
+                {
+                    Log.d(TAG, "onImageAvailable " + width + "X" + height + "X" + planesLength);
 
-                ByteBuffer bufferY = im.getPlanes()[0].getBuffer();
-                ByteBuffer bufferU = im.getPlanes()[1].getBuffer();
-                ByteBuffer bufferV = im.getPlanes()[2].getBuffer();
+                    ByteBuffer bufferY = im.getPlanes()[0].getBuffer();
+                    ByteBuffer bufferU = im.getPlanes()[1].getBuffer();
+                    ByteBuffer bufferV = im.getPlanes()[2].getBuffer();
 
-                ByteBuffer yuvBuffer = ByteBuffer.allocateDirect(bufferY.remaining() + bufferU.remaining() + bufferV.remaining());
-                yuvBuffer.put(bufferY);
-                yuvBuffer.put(bufferV);
-                yuvBuffer.put(bufferU);
-//            endTime = System.currentTimeMillis();
+                    ByteBuffer yuvBuffer = ByteBuffer.allocateDirect(bufferY.remaining() + bufferU.remaining() + bufferV.remaining());
+                    yuvBuffer.put(bufferY);
+                    yuvBuffer.put(bufferV);
+                    yuvBuffer.put(bufferU);
+                    //                endTime = System.currentTimeMillis();
 
-                byte[] yuv = yuvBuffer.array();
-//            Log.d(TAG, "--------中途----------- " + (endTime - startTime));
+                    byte[] yuv = yuvBuffer.array();
+                    //                Log.d(TAG, "--------中途----------- " + (endTime - startTime));
 
-                Log.d(TAG, "---------------start-----------");
-                startTime = System.currentTimeMillis();
-                cameraView.draw(yuv, width, height, 270);
+                    Log.d(TAG, "---------------start-----------");
+                    startTime = System.currentTimeMillis();
+                    cameraView.draw(yuv, width, height, 270);
+                }
+                lock.unlock();
+                im.close();
+                long endTime = System.currentTimeMillis();
+                Log.d(TAG, "----------------end-------------");
+                Log.d(TAG, "cost time: " + (endTime - startTime));
             }
-            lock.unlock();
-            im.close();
-            long endTime = System.currentTimeMillis();
-            Log.d(TAG, "----------------end-------------");
-            Log.d(TAG, "cost time: " + (endTime - startTime));
+
         }
 
     };

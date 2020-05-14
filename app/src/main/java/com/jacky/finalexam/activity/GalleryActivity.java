@@ -19,9 +19,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.jacky.finalexam.R;
+import com.jacky.finalexam.jni.MobilenetSSDNcnn;
 import com.jacky.finalexam.utils.Util;
-import com.jacky.finalexam.jni.Yolo;
-
+import com.jacky.finalexam.view.CameraView;
+import com.jacky.finalexam.jni.MobilenetSSDNcnn.Obj;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,9 +34,11 @@ public class GalleryActivity extends BaseActivity {
     private ImageView show;
     private TextView out;
     private boolean isLoad = false;
-    private int[] dims = {1, 3, 416, 416};
+//    modify by dongb, for yolov3
+//    private int[] dims = {1, 3, 416, 416};
+    private int[] dims = {1, 3, 300, 300};
     private ArrayList<String> resultLabel = new ArrayList<>();
-    private com.jacky.finalexam.jni.Yolo Yolo = new Yolo();
+    private com.jacky.finalexam.jni.MobilenetSSDNcnn MobilenetSSDNcnn = new MobilenetSSDNcnn();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -43,20 +46,17 @@ public class GalleryActivity extends BaseActivity {
         setContentView(R.layout.activity_gallery);
 //        CameraView cameraView = findViewById(R.id.camera);
         try {
-            initYolo();
+            initMobilenetSSDNcnn();
         } catch (IOException e) {
-            Log.e("MainActivity", "init yolo error");
+            Log.e("MainActivity", "init mobilenet ssd error");
         }
         initView();
         Util.loadLabels(resultLabel, this);
     }
 
-    private void initYolo() throws IOException {
+    private void initMobilenetSSDNcnn() throws IOException {
 
-        String paramPath = Util.getPathFromAssets(this, "yolov3-tiny.param");
-        String binPath = Util.getPathFromAssets(this, "yolov3-tiny.bin");
-
-        isLoad = Yolo.Init(paramPath, binPath);
+        isLoad = MobilenetSSDNcnn.Init(getAssets());
         Log.d(TAG, "load model success?:" + isLoad);
     }
 
@@ -112,7 +112,7 @@ public class GalleryActivity extends BaseActivity {
         try {
 
             long startTime = System.currentTimeMillis();
-            float[] result = Yolo.Detect(input_bmp);
+            Obj[] result = MobilenetSSDNcnn.Detect(input_bmp,false);
             if (result == null) {
                 out.setText(getResources().getString(R.string.predict_result));
                 Log.d(TAG, "predict result is null");
@@ -124,37 +124,52 @@ public class GalleryActivity extends BaseActivity {
             Log.d(TAG, "result length: " + result.length);
 
             StringBuilder resultContent = new StringBuilder();
-            resultContent.append("检测结果：").append(Arrays.toString(result));
-            for (int i = 0; i < result.length; i += 6) {
+            resultContent.append("检测结果：");
+            for (int i = 0; i < result.length; i ++) {
                 resultContent.append("\n类别：")
-                        .append(resultLabel.get((int) result[i])).append("\n概率：")
-                        .append(result[i + 1]).append("\n耗时：").append(cost).append("ms").append("\n");
+                        .append(result[i].label).append("\n概率：")
+                        .append(result[i].prob).append("\n耗时：").append(cost).append("ms").append("\n");
             }
             out.setText(resultContent.toString());
             Canvas canvas = new Canvas(rgba);
-            Paint paint = new Paint();
-            paint.setColor(Color.RED);
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(1);
 
-            float[][] finalArray = Util.twoArray(result);
-            int obj = 0;
-            int num = result.length / 6;
-            for (obj = 0; obj < num; obj++) {
-                paint.setColor(Color.RED);
+            for (int i = 0; i < result.length; i++) {
+
+                Paint paint = new Paint();
+                paint.setColor(Color.GREEN);
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setStrokeWidth(1);
-                canvas.drawRect(finalArray[obj][2] * rgba.getWidth(),
-                        finalArray[obj][3] * rgba.getHeight(),
-                        finalArray[obj][4] * rgba.getWidth(),
-                        finalArray[obj][5] * rgba.getHeight(), paint);
 
-                paint.setColor(Color.YELLOW);
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(1);
-                canvas.drawText(resultLabel.get((int) finalArray[obj][0]),
-                        finalArray[obj][2] * rgba.getWidth(), finalArray[obj][3] * rgba.getHeight(), paint);
+//                modify by dongb
+//                canvas.drawRect(result[i].x, result[i].y, result[i].x + result[i].w, result[i].y + result[i].h, paint);
+                canvas.drawRect(result[i].x*rgba.getWidth(), result[i].y*rgba.getHeight(), result[i].xe*rgba.getWidth(), result[i].ye*rgba.getHeight(), paint);
+
+                String text = result[i].label + " = " + String.format("%.1f", result[i].prob * 100) + "%";
+
+                Paint textbgpaint = new Paint();
+                textbgpaint.setColor(Color.RED);
+                textbgpaint.setStyle(Paint.Style.FILL);
+
+                Paint textpaint = new Paint();
+                textpaint.setColor(Color.WHITE);
+                textpaint.setTextSize(16);
+                textpaint.setTextAlign(Paint.Align.LEFT);
+
+                float text_width = textpaint.measureText(text);
+                float text_height = - textpaint.ascent() + textpaint.descent();
+
+                float x = result[i].x*rgba.getWidth();
+                float y = result[i].y*rgba.getHeight() - text_height;
+                if (y < 0)
+                    y = 0;
+                if (x + text_width > rgba.getWidth())
+                    x = rgba.getWidth() - text_width;
+
+                canvas.drawRect(x, y, x + text_width, y + text_height, textbgpaint);
+                canvas.drawText(text, x, y - textpaint.ascent(), textpaint);
+
             }
+
             show.setImageBitmap(rgba);
 
 

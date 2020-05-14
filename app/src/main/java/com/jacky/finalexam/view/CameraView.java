@@ -33,11 +33,10 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-
+import com.jacky.finalexam.jni.MobilenetSSDNcnn;
 import com.jacky.finalexam.App;
-import com.jacky.finalexam.jni.Yolo;
 import com.jacky.finalexam.utils.Util;
-
+import com.jacky.finalexam.jni.MobilenetSSDNcnn.Obj;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,19 +54,18 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     private Allocation in, out;
 
     private boolean isLoad = false;
-    private int[] dims = {1, 3, 416, 416};
+//    modify by dongb, for yolov3
+//    private int[] dims = {1, 3, 416, 416};
+    private int[] dims = {1, 3, 300, 300};
     private ArrayList<String> resultLabel = new ArrayList<>();
-    private com.jacky.finalexam.jni.Yolo Yolo = new Yolo();
+    private com.jacky.finalexam.jni.MobilenetSSDNcnn MobilenetSSDNcnn = new MobilenetSSDNcnn();
 
     private float mWidth = 0;
     private float mHeight = 0;
 
-    private void initYolo() throws IOException {
+    private void initMobilenetSSDNcnn() throws IOException {
 
-        String paramPath = Util.getPathFromAssets(App.getContext(), "yolov3-tiny.param");
-        String binPath = Util.getPathFromAssets(App.getContext(), "yolov3-tiny.bin");
-
-        isLoad = Yolo.Init(paramPath, binPath);
+        isLoad = MobilenetSSDNcnn.Init(App.getContext().getAssets());
         Log.d(TAG, "load model success?:" + isLoad);
     }
 
@@ -84,7 +82,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         Log.i(TAG, "AutoFitSurfaceView struct");
         initParams(context);
         try {
-            initYolo();
+            initMobilenetSSDNcnn();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -117,7 +115,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         Log.i(TAG, "surfaceDestroyed ");
-        Yolo = null;
+        MobilenetSSDNcnn = null;
     }
 
     private void drawRect(Rect rect, int color, String string) {
@@ -131,37 +129,53 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         mCanvas.drawText(string, rect.left + 4, rect.top + 14, paint);
     }
 
-    public void drawDetect(float[] data, int width, int height, int rolatedeg) {
-        int obj = 0;
-        int num = data.length / 6;
-        int x, y, xe, ye;
-        float[][] finalArray = Util.twoArray(data);
+    public void drawDetect(Obj[] data, int width, int height, int rolatedeg) {
+        for (int i = 0; i < data.length; i++) {
 
-        for (obj = 0; obj < num; obj++) {
-            x = (int) (finalArray[obj][2] * width);
-            y = (int) (finalArray[obj][3] * height);
-            xe = (int) (finalArray[obj][4] * width);
-            ye = (int) (finalArray[obj][5] * height);
+            Paint paint = new Paint();
+            paint.setColor(Color.GREEN);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(2);
 
-            if (x < 0) {
-                x = 0;
-            }
-            if (y < 0) {
+//            modify by dongb
+//            mCanvas.drawRect(data[i].x, data[i].y, data[i].x + data[i].w, data[i].y + data[i].h, paint);
+            mCanvas.drawRect(data[i].x*width, data[i].y*height, data[i].xe*width, data[i].ye*height, paint);
+
+//            modify by dongb
+//            Log.d(TAG, "onImageAvailable----------------" + width + "X" + height + "X" + data[i].x+"X" + data[i].y+"X" + data[i].w+"X" + data[i].h);
+
+            String text = data[i].label + " = " + String.format("%.1f", data[i].prob * 100) + "%";
+
+            Paint textbgpaint = new Paint();
+            textbgpaint.setColor(Color.RED);
+            textbgpaint.setStyle(Paint.Style.FILL);
+
+            Paint textpaint = new Paint();
+            textpaint.setColor(Color.WHITE);
+            textpaint.setTextSize(24);
+            textpaint.setTextAlign(Paint.Align.LEFT);
+
+            float text_width = textpaint.measureText(text);
+            float text_height = - textpaint.ascent() + textpaint.descent();
+
+//            modify by dongb
+//            float x = data[i].x;
+//            float y = data[i].y - text_height;
+            float x = data[i].x*width;
+            float y = data[i].y*height - text_height;
+            if (y < 0)
                 y = 0;
-            }
-            if (xe > width) {
-                xe = width;
-            }
-            if (ye > height) {
-                ye = height;
-            }
+            if (x + text_width > width)
+                x = width - text_width;
 
-            drawRect(new Rect(x, y, xe, ye), Color.GREEN, resultLabel.get((int) finalArray[obj][0]));
+            mCanvas.drawRect(x, y, x + text_width, y + text_height, textbgpaint);
+            mCanvas.drawText(text, x, y - textpaint.ascent(), textpaint);
+
         }
 
     }
 
-    private float[] result;
+    private Obj[] result;
     private boolean isRunning;
 
     @SuppressLint("WrongThread")
@@ -178,7 +192,6 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 
             mBitmap = yuvToBitmap(data, width, height);
 
-
 //            mBitmap = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
 //            Bitmap rgbout = mBitmap.copy(Bitmap.Config.ARGB_8888, true);
             endTime = System.currentTimeMillis();
@@ -190,14 +203,13 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
                 Log.d(TAG, "data data is to bitmap error");
                 return;
             }
-//
-//
+
 //            ByteArrayOutputStream stream = new ByteArrayOutputStream();
 //            mBitmap.compress(Bitmap.CompressFormat.JPEG, 10, stream);
 //            mBitmap = null;
 //            mBitmap = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
 
-            //将holder持有的surface界面作为画布，在上面绘图
+//            将holder持有的surface界面作为画布，在上面绘图
             try {
                 mCanvas = mHolder.lockCanvas();
                 mWidth = mCanvas.getWidth();
@@ -219,7 +231,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
                     isRunning = true;
                     new Thread(new Runnable() {
                         public void run() {
-                            result = Yolo.Detect(inputBitmap);
+                            result = MobilenetSSDNcnn.Detect(inputBitmap,false);
                             Log.d(TAG, "result: " + Arrays.toString(result));
                             isRunning = false;
                         }
